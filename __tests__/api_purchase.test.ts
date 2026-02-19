@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import { NextRequest } from 'next/server'
 import { POST } from '../app/api/purchase/route'
 import { purchase } from '../app/actions/purchase'
