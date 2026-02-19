@@ -8,12 +8,12 @@ It is designed for multiple businesses sharing the same backend, with full **dat
 
 **Key Features Implemented:**
 
-* Multi-product orders per purchase.
-* Customers have a **fixed credit limit**, but **partial payments are allowed**.
-* Purchases automatically update **stock** and **customer balances**.
-* Multi-tenant safety: one business cannot access or modify another business's data.
-* Concurrency-safe operations using **transactions** and **row-level locks**.
-* Query for **overdue customers** (balances older than 30 days).
+- Multi-product orders per purchase.
+- Customers have a **fixed credit limit**, but **partial payments are allowed**.
+- Purchases automatically update **stock** and **customer balances**.
+- Multi-tenant safety: one business cannot access or modify another business's data.
+- Concurrency-safe operations using **transactions** and **row-level locks**.
+- Query for **overdue customers** (balances older than 30 days).
 
 ---
 
@@ -64,32 +64,27 @@ All purchase logic is encapsulated in the PostgreSQL function **`process_purchas
 **Steps in the function:**
 
 1. **Customer & Product Locking**
-
-   * `FOR UPDATE` locks are used to prevent concurrent requests from overselling products or exceeding credit.
+   - `FOR UPDATE` locks are used to prevent concurrent requests from overselling products or exceeding credit.
 
 2. **Credit Validation**
-
-   * The function calculates the customer's current balance, considering previous orders and payments.
-   * It raises an exception if the new purchase exceeds the customer’s credit limit.
+   - The function calculates the customer's current balance, considering previous orders and payments.
+   - It raises an exception if the new purchase exceeds the customer’s credit limit.
 
 3. **Stock Validation**
-
-   * Each product's available stock is checked.
-   * If stock is insufficient, the function raises an exception, preventing partial updates.
+   - Each product's available stock is checked.
+   - If stock is insufficient, the function raises an exception, preventing partial updates.
 
 4. **Atomic Transaction**
-
-   * All inserts/updates (orders, order_items, stock adjustment) happen inside a **single transaction**.
-   * On any error, the transaction rolls back completely.
+   - All inserts/updates (orders, order_items, stock adjustment) happen inside a **single transaction**.
+   - On any error, the transaction rolls back completely.
 
 5. **Tenant Isolation**
-
-   * Every table and query includes `business_id`, ensuring that purchases for one business cannot affect another.
+   - Every table and query includes `business_id`, ensuring that purchases for one business cannot affect another.
 
 **Next.js Integration:**
 
-* **Server Action (`app/actions/purchase.ts`)**: calls `process_purchase` via Supabase RPC.
-* **API Route (`app/api/purchase/route.ts`)**: exposes the purchase functionality over HTTP for testing with tools like **ApiDog** or **Postman**.
+- **Server Action (`app/actions/purchase.ts`)**: calls `process_purchase` via Supabase RPC.
+- **API Route (`app/api/purchase/route.ts`)**: exposes the purchase functionality over HTTP for testing with tools like **ApiDog** or **Postman**.
 
 ---
 
@@ -118,19 +113,19 @@ Content-Type: application/json
 
 **Responses:**
 
-* **Success:**
+- **Success:**
 
 ```json
 { "success": true }
 ```
 
-* **Insufficient stock:**
+- **Insufficient stock:**
 
 ```json
 { "error": "insufficient stock" }
 ```
 
-* **Credit limit exceeded:**
+- **Credit limit exceeded:**
 
 ```json
 { "error": "credit limit exceeded" }
@@ -157,17 +152,17 @@ GROUP BY c.id
 HAVING SUM(o.total_amount) - COALESCE(SUM(p.amount), 0) > 0;
 ```
 
-* Returns all customers with unpaid balances older than 30 days.
-* Takes partial payments into account.
+- Returns all customers with unpaid balances older than 30 days.
+- Takes partial payments into account.
 
 ---
 
 ## Concurrency and Multi-Tenant Safety
 
-* **Atomic Transactions:** All purchase logic is executed inside a single transaction, guaranteeing either **full success or full rollback**.
-* **Row Locking (`FOR UPDATE`):** Prevents overselling or credit limit violations in concurrent requests.
-* **Tenant Isolation:** `business_id` is included in all queries, ensuring one business cannot affect another’s data.
-* **Partial Payments:** Properly reduce outstanding balance and allow subsequent purchases within credit limits.
+- **Atomic Transactions:** All purchase logic is executed inside a single transaction, guaranteeing either **full success or full rollback**.
+- **Row Locking (`FOR UPDATE`):** Prevents overselling or credit limit violations in concurrent requests.
+- **Tenant Isolation:** `business_id` is included in all queries, ensuring one business cannot affect another’s data.
+- **Partial Payments:** Properly reduce outstanding balance and allow subsequent purchases within credit limits.
 
 ---
 
@@ -180,21 +175,21 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-* **Use server-only keys** (never expose to client).
-* Restart Next.js after updating `.env.local`.
+- **Use server-only keys** (never expose to client).
+- Restart Next.js after updating `.env.local`.
 
 ---
 
 ## Seed Data
 
-* `sql/seed.sql` contains example businesses, customers, and products for testing.
-* Use these for API testing or to simulate concurrent requests.
+- `sql/seed.sql` contains example businesses, customers, and products for testing.
+- Use these for API testing or to simulate concurrent requests.
 
 ---
 
 ## How to Run
 
-```bash
+````bash
 # Install dependencies
 npm install
 
@@ -203,15 +198,58 @@ npm run dev
 
 # Test API endpoint
 POST http://localhost:3000/api/purchase
+
+---
+
+## Testing
+
+The project uses **Jest** and **React Testing Library** for unit and integration tests.
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+````
+
+Tests are located in the `__tests__` directory and cover server actions and API routes.
+
+---
+
+## Docker
+
+You can run the entire application using Docker.
+
+### Prerequisites
+
+- Docker and Docker Compose installed.
+- `.env.local` file with Supabase credentials.
+
+### Running with Docker Compose
+
+```bash
+# Build and start the container
+docker-compose up --build
 ```
+
+The application will be available at `http://localhost:3000`.
+
+### Dockerfile Details
+
+The `Dockerfile` uses a multi-stage build:
+
+1. **deps**: Installs production and development dependencies.
+2. **builder**: Builds the Next.js application using the `standalone` output for minimal image size.
+3. **runner**: Optimized production image running as a non-root user.
 
 ---
 
 ## Optional Enhancements
 
-* Indexes for faster queries: `orders(customer_id, business_id)`, `products(business_id)`.
-* View for real-time outstanding balances.
-* More detailed JSON errors for API clients.
+- Indexes for faster queries: `orders(customer_id, business_id)`, `products(business_id)`.
+- View for real-time outstanding balances.
+- More detailed JSON errors for API clients.
 
 ---
 
@@ -219,9 +257,9 @@ POST http://localhost:3000/api/purchase
 
 This backend demonstrates:
 
-* Correct **multi-tenant database design**
-* Atomic and concurrency-safe **purchase logic**
-* **Credit and stock validation**
-* **Partial payment handling**
-* Query for **overdue customers**
-* Clear **API exposure** for testing
+- Correct **multi-tenant database design**
+- Atomic and concurrency-safe **purchase logic**
+- **Credit and stock validation**
+- **Partial payment handling**
+- Query for **overdue customers**
+- Clear **API exposure** for testing
